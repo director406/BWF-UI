@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Camera, Upload, Medal, TrendingUp, MapPin, Clock, Award, Users, Heart, CheckCircle, BarChart3, X, Maximize2 } from "lucide-react";
+import {
+  Camera, Upload, Medal, TrendingUp, MapPin, Clock, Award, Users, Heart,
+  CheckCircle, BarChart3, X, Maximize2, ChevronLeft, ChevronRight, Plus, Images
+} from "lucide-react";
 import { Button, Card, SectionWrapper } from "../../components";
 import { getCurrentUser, isAuthenticated } from "../../services/authService";
 import { saveCheckIn, getCheckIns, getAllCheckIns } from "../../services/firestoreService";
@@ -22,10 +25,9 @@ function CheckInPage() {
     location: "",
     beneficiaries: "",
     hours: "",
-    notes: "",
-    photo: null
+    notes: ""
   });
-  const [previewImage, setPreviewImage] = useState(null);
+  const [previewImages, setPreviewImages] = useState([]);
   const [recentCheckIns, setRecentCheckIns] = useState([]);
   const [allCheckIns, setAllCheckIns] = useState([]);
   const [userStats, setUserStats] = useState({ totalDrives: 0, currentBadge: null });
@@ -37,6 +39,19 @@ function CheckInPage() {
     if (!modalImage) return;
     const handleKeyDown = (e) => {
       if (e.key === "Escape") setModalImage(null);
+      if (modalImage.photos && modalImage.photos.length > 1) {
+        if (e.key === "ArrowLeft") {
+          setModalImage((prev) => ({
+            ...prev,
+            activeIndex: (prev.activeIndex - 1 + prev.photos.length) % prev.photos.length,
+          }));
+        } else if (e.key === "ArrowRight") {
+          setModalImage((prev) => ({
+            ...prev,
+            activeIndex: (prev.activeIndex + 1) % prev.photos.length,
+          }));
+        }
+      }
     };
     window.addEventListener("keydown", handleKeyDown);
     const originalOverflow = document.body.style.overflow;
@@ -82,15 +97,42 @@ function CheckInPage() {
   };
 
   const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setCheckInData({ ...checkInData, photo: file });
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPreviewImage(reader.result);
-      };
-      reader.readAsDataURL(file);
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    // Support up to 6 photos per check-in
+    const remainingSlots = Math.max(0, 6 - previewImages.length);
+    if (remainingSlots === 0) {
+      alert("You can upload a maximum of 6 images per check-in.");
+      return;
     }
+
+    const filesToProcess = files.slice(0, remainingSlots);
+
+    const readers = filesToProcess.map((file) => {
+      return new Promise((resolve) => {
+        if (file.size > 8 * 1024 * 1024) {
+          resolve(null);
+          return;
+        }
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.onerror = () => resolve(null);
+        reader.readAsDataURL(file);
+      });
+    });
+
+    Promise.all(readers).then((newImages) => {
+      const validImages = newImages.filter(Boolean);
+      setPreviewImages((prev) => [...prev, ...validImages]);
+    });
+
+    // Reset so same files can be re-selected if removed
+    e.target.value = "";
+  };
+
+  const handleRemoveImage = (indexToRemove) => {
+    setPreviewImages((prev) => prev.filter((_, idx) => idx !== indexToRemove));
   };
 
   const handleChange = (e) => {
@@ -102,6 +144,7 @@ function CheckInPage() {
 
     const normalizedLocation = formatCityName(checkInData.location);
     const parsedHours = parseFloat(checkInData.hours) || 0;
+    const primaryPhoto = previewImages[0] ?? null;
 
     const checkIn = {
       id:            Date.now().toString(),
@@ -113,7 +156,8 @@ function CheckInPage() {
       beneficiaries: parseInt(checkInData.beneficiaries) || 0,
       hours:         parsedHours,
       notes:         checkInData.notes,
-      photo:         previewImage ?? null,
+      photo:         primaryPhoto,
+      photos:        previewImages,
       timestamp:     new Date().toISOString(),
     };
 
@@ -127,7 +171,8 @@ function CheckInPage() {
         beneficiaries: checkInData.beneficiaries,
         hours:         parsedHours,
         notes:         checkInData.notes,
-        photo:         previewImage ?? null,
+        photo:         primaryPhoto,
+        photos:        previewImages,
       });
     } catch {
       // Firebase not configured — save locally
@@ -138,8 +183,8 @@ function CheckInPage() {
 
     await loadCheckInData(currentUser.id);
     setSuccess("Check-in successful!");
-    setCheckInData({ activity: "", location: "", beneficiaries: "", hours: "", notes: "", photo: null });
-    setPreviewImage(null);
+    setCheckInData({ activity: "", location: "", beneficiaries: "", hours: "", notes: "" });
+    setPreviewImages([]);
     setTimeout(() => setSuccess(""), 3000);
   };
 
@@ -499,47 +544,64 @@ function CheckInPage() {
                 </div>
               )}
               <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
-                {filteredCheckIns.map((checkIn) => (
-                  <div
-                    key={checkIn.id}
-                    onClick={() => checkIn.photo && setModalImage(checkIn)}
-                    className={`group relative aspect-square overflow-hidden rounded-xl shadow-md transition hover:shadow-xl ${
-                      checkIn.photo ? "cursor-pointer" : ""
-                    }`}
-                  >
-                    {checkIn.photo ? (
-                      <>
-                        <img 
-                          src={checkIn.photo} 
-                          alt={checkIn.activity}
-                          className="h-full w-full object-cover transition duration-300 group-hover:scale-110"
-                        />
-                        <div className="absolute inset-0 flex items-center justify-center bg-black/25 opacity-0 transition group-hover:opacity-100">
-                          <span className="rounded-full bg-black/60 p-2 text-white shadow-lg backdrop-blur-sm">
-                            <Maximize2 size={18} />
+                {filteredCheckIns.map((checkIn) => {
+                  const hasPhoto = Boolean(checkIn.photo || (checkIn.photos && checkIn.photos.length > 0));
+                  const displayPhoto = checkIn.photo || (checkIn.photos && checkIn.photos[0]);
+                  const photoCount = checkIn.photos && checkIn.photos.length > 0 ? checkIn.photos.length : (checkIn.photo ? 1 : 0);
+                  const photosList = checkIn.photos && checkIn.photos.length > 0 ? checkIn.photos : (checkIn.photo ? [checkIn.photo] : []);
+
+                  return (
+                    <div
+                      key={checkIn.id}
+                      onClick={() => hasPhoto && setModalImage({ ...checkIn, photos: photosList, activeIndex: 0 })}
+                      className={`group relative aspect-square overflow-hidden rounded-xl shadow-md transition hover:shadow-xl ${
+                        hasPhoto ? "cursor-pointer" : ""
+                      }`}
+                    >
+                      {hasPhoto ? (
+                        <>
+                          <img 
+                            src={displayPhoto} 
+                            alt={checkIn.activity}
+                            className="h-full w-full object-cover transition duration-300 group-hover:scale-110"
+                          />
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/25 opacity-0 transition group-hover:opacity-100">
+                            <span className="rounded-full bg-black/60 p-2 text-white shadow-lg backdrop-blur-sm">
+                              <Maximize2 size={18} />
+                            </span>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-green-400 to-green-600">
+                          <Camera size={48} className="text-white opacity-50" />
+                        </div>
+                      )}
+
+                      {/* Multiple Photos Badge */}
+                      {photoCount > 1 && (
+                        <div className="absolute top-2 left-2 pointer-events-none z-10">
+                          <span className="inline-flex items-center gap-1 rounded-full bg-black/75 backdrop-blur-sm px-2 py-0.5 text-[10px] font-bold text-white shadow-md">
+                            <Images size={11} /> {photoCount} photos
                           </span>
                         </div>
-                      </>
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-green-400 to-green-600">
-                        <Camera size={48} className="text-white opacity-50" />
+                      )}
+
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none" />
+                      <div className="absolute bottom-0 left-0 right-0 p-3 text-white pointer-events-none">
+                        <p className="font-bold text-sm">{checkIn.location}</p>
+                        <p className="text-xs text-white/80 flex items-center gap-1 mt-1">
+                          <Clock size={12} />
+                          {formatTimeAgo(checkIn.timestamp)}
+                        </p>
                       </div>
-                    )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none" />
-                    <div className="absolute bottom-0 left-0 right-0 p-3 text-white pointer-events-none">
-                      <p className="font-bold text-sm">{checkIn.location}</p>
-                      <p className="text-xs text-white/80 flex items-center gap-1 mt-1">
-                        <Clock size={12} />
-                        {formatTimeAgo(checkIn.timestamp)}
-                      </p>
-                    </div>
-                    <div className="absolute top-2 right-2 pointer-events-none">
-                      <div className="rounded-full bg-white/90 px-2 py-1 text-xs font-semibold text-green-700">
-                        {checkIn.activity}
+                      <div className="absolute top-2 right-2 pointer-events-none">
+                        <div className="rounded-full bg-white/90 px-2 py-1 text-xs font-semibold text-green-700">
+                          {checkIn.activity}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </>
           )}
@@ -733,65 +795,139 @@ function CheckInPage() {
               )}
 
               <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Photo Upload */}
+                {/* Photo Upload (Supports Multiple Images) */}
                 <div>
-                  <label className="mb-3 block text-center text-sm font-semibold text-slate-700">
-                    <Camera className="mr-1 inline" size={18} />
-                    Upload Activity Photo (Optional)
-                  </label>
-                  {previewImage ? (
-                    <div className="relative group cursor-pointer overflow-hidden rounded-xl">
-                      <img 
-                        src={previewImage} 
-                        alt="Preview" 
-                        onClick={() =>
-                          setModalImage({
-                            photo: previewImage,
-                            activity: checkInData.activity || "Activity Photo",
-                            location: checkInData.location || "Uploaded Preview",
-                            notes: checkInData.notes || "",
-                          })
-                        }
-                        className="h-80 w-full rounded-xl object-cover transition duration-300 group-hover:scale-105"
-                      />
-                      <div
-                        onClick={() =>
-                          setModalImage({
-                            photo: previewImage,
-                            activity: checkInData.activity || "Activity Photo",
-                            location: checkInData.location || "Uploaded Preview",
-                            notes: checkInData.notes || "",
-                          })
-                        }
-                        className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 transition group-hover:opacity-100"
-                      >
-                        <span className="inline-flex items-center gap-1.5 rounded-full bg-black/70 px-4 py-2 text-xs font-semibold text-white backdrop-blur-sm">
-                          <Maximize2 size={14} /> Click to view full image
-                        </span>
+                  <div className="mb-3 flex items-center justify-between">
+                    <label className="flex items-center gap-1.5 text-sm font-semibold text-slate-700 dark:text-slate-200">
+                      <Camera size={18} className="text-green-600" />
+                      Activity Photos (Optional, max 6)
+                    </label>
+                    {previewImages.length > 0 && previewImages.length < 6 && (
+                      <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-green-300 dark:border-green-800 bg-green-50 dark:bg-green-900/40 px-3 py-1 text-xs font-semibold text-green-700 dark:text-green-300 transition hover:bg-green-100 dark:hover:bg-green-900/60">
+                        <Plus size={14} /> Add More Photos
+                        <input
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          onChange={handleImageChange}
+                          className="hidden"
+                        />
+                      </label>
+                    )}
+                  </div>
+
+                  {previewImages.length > 0 ? (
+                    <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-800/50 p-4">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                        {previewImages.map((img, idx) => (
+                          <div
+                            key={idx}
+                            className="group relative aspect-[4/3] overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm"
+                          >
+                            <img
+                              src={img}
+                              alt={`Upload ${idx + 1}`}
+                              onClick={() =>
+                                setModalImage({
+                                  photo: img,
+                                  photos: previewImages,
+                                  activeIndex: idx,
+                                  activity: checkInData.activity || "Uploaded Preview",
+                                  location: checkInData.location || "Preview",
+                                  notes: checkInData.notes || "",
+                                })
+                              }
+                              className="h-full w-full object-cover cursor-pointer transition duration-300 group-hover:scale-105"
+                            />
+                            <div
+                              onClick={() =>
+                                setModalImage({
+                                  photo: img,
+                                  photos: previewImages,
+                                  activeIndex: idx,
+                                  activity: checkInData.activity || "Uploaded Preview",
+                                  location: checkInData.location || "Preview",
+                                  notes: checkInData.notes || "",
+                                })
+                              }
+                              className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 transition group-hover:opacity-100 cursor-pointer"
+                            >
+                              <span className="rounded-full bg-black/60 p-2 text-white shadow-md">
+                                <Maximize2 size={16} />
+                              </span>
+                            </div>
+
+                            <div className="absolute top-2 left-2 pointer-events-none">
+                              <span className="rounded-md bg-black/70 backdrop-blur-sm px-2 py-0.5 text-[10px] font-bold text-white shadow-sm">
+                                {idx === 0 ? "Cover Photo" : `#${idx + 1}`}
+                              </span>
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveImage(idx)}
+                              className="absolute top-2 right-2 rounded-full bg-red-500 p-1.5 text-white shadow-lg transition hover:bg-red-600 hover:scale-110"
+                              title="Remove photo"
+                            >
+                              <X size={13} />
+                            </button>
+                          </div>
+                        ))}
+
+                        {previewImages.length < 6 && (
+                          <label className="flex aspect-[4/3] cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-green-300 dark:border-green-800 bg-white/70 dark:bg-slate-800/40 p-4 text-center transition hover:border-green-500 hover:bg-green-50/60 dark:hover:bg-green-950/20">
+                            <div className="rounded-full bg-green-100 dark:bg-green-900/50 p-2 text-green-600 dark:text-green-400">
+                              <Plus size={20} />
+                            </div>
+                            <span className="mt-2 text-xs font-bold text-green-700 dark:text-green-300">
+                              Add Photo
+                            </span>
+                            <span className="text-[10px] text-slate-400">
+                              {6 - previewImages.length} slots left
+                            </span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              multiple
+                              onChange={handleImageChange}
+                              className="hidden"
+                            />
+                          </label>
+                        )}
                       </div>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setPreviewImage(null);
-                          setCheckInData({ ...checkInData, photo: null });
-                        }}
-                        className="absolute right-3 top-3 z-10 rounded-full bg-red-500 p-2 text-white shadow-lg transition hover:bg-red-600"
-                        title="Remove photo"
-                      >
-                        ✕
-                      </button>
+
+                      <div className="mt-3 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 border-t border-slate-200/60 dark:border-slate-700/60 pt-2.5">
+                        <span className="flex items-center gap-1 font-medium">
+                          <Images size={13} className="text-green-600" />
+                          {previewImages.length} of 6 photos selected
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setPreviewImages([])}
+                          className="text-xs text-red-500 hover:text-red-700 transition font-medium"
+                        >
+                          Clear all
+                        </button>
+                      </div>
                     </div>
                   ) : (
-                    <label className="flex h-80 cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-green-300 bg-green-50 transition hover:border-green-400 hover:bg-green-100">
-                      <div className="rounded-full bg-green-200 p-6">
-                        <Upload size={48} className="text-green-600" />
+                    <label className="flex h-72 cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-green-300 bg-green-50/60 dark:bg-slate-800/50 dark:border-green-800 transition hover:border-green-400 hover:bg-green-100/60 dark:hover:bg-slate-800">
+                      <div className="rounded-full bg-green-200/80 dark:bg-green-900/60 p-6 shadow-sm">
+                        <Upload size={44} className="text-green-600 dark:text-green-300" />
                       </div>
-                      <p className="mt-4 text-lg font-semibold text-green-700">Click to upload activity photo</p>
-                      <p className="mt-1 text-sm text-slate-500">Upload a selfie from your volunteer activity</p>
+                      <p className="mt-4 text-lg font-bold text-green-800 dark:text-green-300">
+                        Click to upload activity photos
+                      </p>
+                      <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                        Select one or multiple photos from your drive (up to 6)
+                      </p>
+                      <span className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-green-100 dark:bg-green-900/50 px-3.5 py-1 text-xs font-semibold text-green-800 dark:text-green-300 shadow-sm">
+                        <Images size={13} /> Multiple selection enabled
+                      </span>
                       <input
                         type="file"
                         accept="image/*"
+                        multiple
                         onChange={handleImageChange}
                         className="hidden"
                       />
@@ -888,59 +1024,133 @@ function CheckInPage() {
         </div>
       </section>
 
-      {/* Full Image Modal Lightbox */}
-      {modalImage && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4 backdrop-blur-sm animate-in fade-in duration-200"
-          onClick={() => setModalImage(null)}
-        >
+      {/* Full Image Modal Lightbox with Multi-Image Carousel */}
+      {modalImage && (() => {
+        const photosList = (modalImage.photos && modalImage.photos.length > 0)
+          ? modalImage.photos
+          : (modalImage.photo ? [modalImage.photo] : (modalImage.url ? [modalImage.url] : []));
+        const activeIdx = Math.min(Math.max(0, modalImage.activeIndex || 0), Math.max(0, photosList.length - 1));
+        const currentPhoto = photosList[activeIdx] || modalImage.photo || modalImage.url;
+        const hasMultiple = photosList.length > 1;
+
+        const handlePrev = (e) => {
+          e.stopPropagation();
+          setModalImage((prev) => ({
+            ...prev,
+            activeIndex: (activeIdx - 1 + photosList.length) % photosList.length,
+          }));
+        };
+
+        const handleNext = (e) => {
+          e.stopPropagation();
+          setModalImage((prev) => ({
+            ...prev,
+            activeIndex: (activeIdx + 1) % photosList.length,
+          }));
+        };
+
+        return (
           <div
-            className="relative flex max-h-[92vh] max-w-5xl w-full flex-col items-center"
-            onClick={(e) => e.stopPropagation()}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4 backdrop-blur-sm animate-in fade-in duration-200"
+            onClick={() => setModalImage(null)}
           >
-            <button
-              onClick={() => setModalImage(null)}
-              className="absolute -right-2 -top-2 sm:-right-4 sm:-top-4 z-10 rounded-full bg-white dark:bg-slate-800 p-2.5 text-slate-900 dark:text-white shadow-2xl transition hover:bg-slate-100 dark:hover:bg-slate-700 hover:scale-105"
-              aria-label="Close full image view"
+            <div
+              className="relative flex max-h-[92vh] max-w-5xl w-full flex-col items-center"
+              onClick={(e) => e.stopPropagation()}
             >
-              <X size={20} />
-            </button>
+              <button
+                onClick={() => setModalImage(null)}
+                className="absolute -right-2 -top-2 sm:-right-4 sm:-top-4 z-20 rounded-full bg-white dark:bg-slate-800 p-2.5 text-slate-900 dark:text-white shadow-2xl transition hover:bg-slate-100 dark:hover:bg-slate-700 hover:scale-105"
+                aria-label="Close full image view"
+              >
+                <X size={20} />
+              </button>
 
-            <div className="relative overflow-hidden rounded-2xl bg-black/40 shadow-2xl max-w-full flex items-center justify-center">
-              <img
-                src={modalImage.photo || modalImage.url || modalImage}
-                alt={modalImage.activity || modalImage.location || "Full view"}
-                className="max-h-[78vh] w-auto max-w-full rounded-2xl object-contain"
-              />
-            </div>
+              <div className="relative overflow-hidden rounded-2xl bg-black/40 shadow-2xl max-w-full flex items-center justify-center min-h-[300px]">
+                {currentPhoto && (
+                  <img
+                    src={currentPhoto}
+                    alt={modalImage.activity || modalImage.location || `Photo ${activeIdx + 1}`}
+                    className="max-h-[72vh] w-auto max-w-full rounded-2xl object-contain select-none transition-all duration-200"
+                  />
+                )}
 
-            {(modalImage.activity || modalImage.location || modalImage.userName || modalImage.notes) && (
-              <div className="mt-4 max-w-2xl text-center text-white">
-                <div className="flex flex-wrap items-center justify-center gap-2">
-                  {modalImage.activity && (
-                    <span className="rounded-full bg-green-500 px-3.5 py-1 text-xs font-bold text-white shadow-sm">
-                      {modalImage.activity}
-                    </span>
-                  )}
-                  {modalImage.location && (
-                    <span className="rounded-full bg-white/20 px-3 py-1 text-xs font-medium text-slate-200 backdrop-blur-sm">
-                      📍 {modalImage.location}
-                    </span>
-                  )}
-                  {modalImage.userName && (
-                    <span className="rounded-full bg-white/10 px-3 py-1 text-xs text-slate-300">
-                      By {modalImage.userName}
-                    </span>
-                  )}
-                </div>
-                {modalImage.notes && (
-                  <p className="mt-2 text-xs italic text-slate-300">"{modalImage.notes}"</p>
+                {/* Left / Right Carousel Controls */}
+                {hasMultiple && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={handlePrev}
+                      className="absolute left-3 top-1/2 -translate-y-1/2 z-10 rounded-full bg-black/60 p-2.5 text-white shadow-lg backdrop-blur-sm transition hover:bg-black/80 hover:scale-110 active:scale-95"
+                      title="Previous photo (Left arrow)"
+                    >
+                      <ChevronLeft size={24} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleNext}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 z-10 rounded-full bg-black/60 p-2.5 text-white shadow-lg backdrop-blur-sm transition hover:bg-black/80 hover:scale-110 active:scale-95"
+                      title="Next photo (Right arrow)"
+                    >
+                      <ChevronRight size={24} />
+                    </button>
+                    <div className="absolute top-3 left-3 pointer-events-none">
+                      <span className="rounded-full bg-black/70 backdrop-blur-sm px-3 py-1 text-xs font-bold text-white shadow-sm">
+                        {activeIdx + 1} / {photosList.length}
+                      </span>
+                    </div>
+                  </>
                 )}
               </div>
-            )}
+
+              {/* Thumbnails row for multi-image checkins */}
+              {hasMultiple && (
+                <div className="mt-3 flex items-center gap-2 overflow-x-auto max-w-full py-1 scrollbar-none">
+                  {photosList.map((p, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => setModalImage((prev) => ({ ...prev, activeIndex: idx }))}
+                      className={`relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-lg border-2 transition ${
+                        activeIdx === idx
+                          ? "border-green-400 scale-105 shadow-md"
+                          : "border-transparent opacity-60 hover:opacity-100"
+                      }`}
+                    >
+                      <img src={p} alt={`Thumb ${idx + 1}`} className="h-full w-full object-cover" />
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {(modalImage.activity || modalImage.location || modalImage.userName || modalImage.notes) && (
+                <div className="mt-3 max-w-2xl text-center text-white">
+                  <div className="flex flex-wrap items-center justify-center gap-2">
+                    {modalImage.activity && (
+                      <span className="rounded-full bg-green-500 px-3.5 py-1 text-xs font-bold text-white shadow-sm">
+                        {modalImage.activity}
+                      </span>
+                    )}
+                    {modalImage.location && (
+                      <span className="rounded-full bg-white/20 px-3 py-1 text-xs font-medium text-slate-200 backdrop-blur-sm">
+                        📍 {modalImage.location}
+                      </span>
+                    )}
+                    {modalImage.userName && (
+                      <span className="rounded-full bg-white/10 px-3 py-1 text-xs text-slate-300">
+                        By {modalImage.userName}
+                      </span>
+                    )}
+                  </div>
+                  {modalImage.notes && (
+                    <p className="mt-2 text-xs italic text-slate-300">"{modalImage.notes}"</p>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </>
   );
 }

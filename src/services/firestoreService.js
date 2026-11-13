@@ -54,23 +54,40 @@ export const saveContactMessage = async (data) => {
   });
 };
 
-// checkInData: { userId, userName, activity, location, beneficiaries, hours, notes, photo (dataUrl) }
+// checkInData: { userId, userName, userEmail, activity, location, beneficiaries, hours, notes, photo, photos }
 export const saveCheckIn = async (checkInData) => {
   requireDb();
-  const { userId, userName, activity, location, beneficiaries, hours, notes, photo } = checkInData;
+  const { userId, userName, userEmail, activity, location, beneficiaries, hours, notes, photo, photos } = checkInData;
 
-  // Compress and store image directly in Firestore (no Storage bucket needed)
-  const photoData = photo ? await compressImage(photo) : null;
+  // Compress array of photos if present, or single photo
+  const rawList = Array.isArray(photos) && photos.length > 0 
+    ? photos 
+    : (photo ? [photo] : []);
+
+  const compressedPhotos = [];
+  for (const p of rawList) {
+    if (!p) continue;
+    try {
+      const c = await compressImage(p);
+      if (c) compressedPhotos.push(c);
+    } catch {
+      compressedPhotos.push(p);
+    }
+  }
+
+  const primaryPhoto = compressedPhotos[0] || (photo ? await compressImage(photo) : null);
 
   return addDoc(collection(db, 'checkins'), {
     userId,
-    userName:      userName || '',
-    activity:      activity || '',
-    location:      location || '',
+    userName:      userName  || '',
+    userEmail:     userEmail || '',
+    activity:      activity  || '',
+    location:      location  || '',
     beneficiaries: Number(beneficiaries) || 0,
     hours:         Number(hours)         || 0,
     notes:         notes || '',
-    photo:         photoData,
+    photo:         primaryPhoto,
+    photos:        compressedPhotos,
     timestamp:     new Date().toISOString(),
     checkedInAt:   serverTimestamp(),
   });
