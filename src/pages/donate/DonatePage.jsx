@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Copy, Check } from "lucide-react";
 import { PageHeader } from "../../components/common";
 
-const UPI_ID = "prachinirmal81@okicici";
+const UPI_ID = "bwfoundation26@hdfcbank";
 
 function DonatePage() {
   const [copied, setCopied] = useState(false);
