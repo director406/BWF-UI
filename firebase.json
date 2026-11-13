@@ -1,5 +1,6 @@
 {
   "hosting": {
+    "site": "beaconwingsfoundation",
     "public": "dist",
     "ignore": [
       "firebase.json",
