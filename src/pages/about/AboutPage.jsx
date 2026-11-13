@@ -13,9 +13,8 @@ const coreValues = [
 const teamMembers = [
   { name: "Prachi Nirmal", role: "Founder & Managing Director", image: "/images/prachin.png", color: "bg-emerald-600" },
   { name: "Santosh Kumar", role: "Vice President & Executive Officer", image: "/images/team-santosh.png", color: "bg-amber-600" },
-  { name: "Sanjay Agrawal", role: "Public Relation Manager", image: "", color: "bg-purple-600" },
   { name: "Gaurav Kumar", role: "Chief Executive Officer", image: "/images/team-gaurav.jpeg", color: "bg-green-700" },
-
+  { name: "Sanjay Agrawal", role: "Public Relation Manager", image: "", color: "bg-purple-600" },
 
   { name: "Nitin Singh", role: "Field Officer", image: "/images/team-nitin.jpeg", color: "bg-cyan-600" },
   // { name: "Poonam Agrawal", role: "Fundraising Officer", image: "", color: "bg-rose-600" },
