@@ -32,13 +32,15 @@ function DonatePage() {
 
             <div className="mt-6 flex justify-center">
               <img
-                src="/images/upi-qr.jpeg"
-                alt="UPI QR Code — Beacon Wings Foundation"
-                className="w-64 rounded-xl border border-slate-200 dark:border-slate-600 shadow-md"
+                src="/images/beacon-wings-upi-qr.jpeg"
+                alt="HDFC Bank UPI QR Code — Beacon Wings Foundation"
+                className="w-72 max-w-full rounded-2xl border border-slate-200 dark:border-slate-700 shadow-lg object-contain"
               />
             </div>
 
-            <p className="mt-5 text-base font-semibold text-slate-800 dark:text-slate-200">Prachi Nirmal</p>
+            <p className="mt-5 text-base font-bold text-slate-900 dark:text-white">
+              Beacon Wings Foundation
+            </p>
 
             <div className="mt-2 flex items-center justify-center gap-2">
               <span className="rounded-lg bg-slate-100 dark:bg-slate-700 px-4 py-1.5 font-mono text-sm text-slate-700 dark:text-slate-200">
