@@ -17,7 +17,7 @@ const teamMembers = [
   { name: "Sanjay Agrawal", role: "Public Relation Manager", image: "", color: "bg-purple-600" },
 
   { name: "Nitin Singh", role: "Field Officer", image: "/images/team-nitin.jpeg", color: "bg-cyan-600" },
-  // { name: "Poonam Agrawal", role: "Fundraising Officer", image: "", color: "bg-rose-600" },
+  { name: "Poonam Agrawal", role: "Chief Operating Officer", image: "/images/team-poonam.jpeg", color: "bg-rose-600" },
 
 ];
 
