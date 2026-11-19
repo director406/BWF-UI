@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { MapPin, Phone, Mail, CheckCircle } from "lucide-react";
+import { MapPin, Phone, Mail, CheckCircle, Clock } from "lucide-react";
 import { APP_INFO, ROUTES } from "../../utils/constants";
 import { saveContactMessage } from "../../services/firestoreService";
 import { notifyAdminSubmission } from "../../services/emailService";
@@ -121,18 +121,27 @@ function ContactPage() {
             </div>
 
             <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-7 shadow-sm">
-              <h3 className="text-base font-bold text-primary">Office Hours</h3>
-              <div className="mt-4 space-y-2 text-sm text-slate-600 dark:text-slate-400">
-                {[
-                  ["Monday – Friday", "9:00 AM – 6:00 PM"],
-                  ["Saturday",        "10:00 AM – 2:00 PM"],
-                  ["Sunday",          "Closed"],
-                ].map(([day, hours]) => (
-                  <div key={day} className="flex justify-between">
-                    <span>{day}</span>
-                    <span className={`font-medium ${hours === "Closed" ? "text-slate-400" : "text-slate-800 dark:text-slate-200"}`}>{hours}</span>
+              <div className="flex items-center justify-between">
+                <h3 className="text-base font-bold text-primary">Office Hours</h3>
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-green-100 dark:bg-green-950/60 px-2.5 py-0.5 text-xs font-bold text-green-700 dark:text-green-300">
+                  <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse"></span>
+                  Active Now
+                </span>
+              </div>
+              <div className="mt-4 rounded-xl border border-green-200 dark:border-green-800/60 bg-gradient-to-br from-green-50/80 to-emerald-50/40 dark:from-slate-800/80 dark:to-slate-900/60 p-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300">
+                    <Clock size={20} />
                   </div>
-                ))}
+                  <div>
+                    <p className="text-base font-bold text-slate-900 dark:text-white">
+                      Support Available 24/7
+                    </p>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
+                      Round-the-clock volunteer & emergency assistance across all 7 days.
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
 
