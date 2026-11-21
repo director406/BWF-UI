@@ -1,0 +1,16 @@
+# Beacon Wings Foundation - robots.txt
+User-agent: *
+Allow: /
+Allow: /images/
+Allow: /favicon.ico
+Allow: /favicon.svg
+Allow: /favicon.png
+Allow: /apple-touch-icon.png
+Allow: /site.webmanifest
+
+User-agent: Googlebot
+Allow: /
+
+User-agent: Googlebot-Image
+Allow: /
+Allow: /images/
