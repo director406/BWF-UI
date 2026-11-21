@@ -36,12 +36,12 @@ const teamMembers = [
     color: "bg-green-700",
   },
   {
-    name: "Poonam Agrawal",
-    role: "Chief Operating Officer",
-    qualification: "B.Com",
-    institution: "University of Lucknow",
-    image: "/images/team-poonam.jpeg",
-    color: "bg-rose-600",
+    name: "Sanjay Agrawal",
+    role: "Public Relation Manager",
+    qualification: "",
+    institution: "",
+    image: "",
+    color: "bg-purple-600",
   },
   {
     name: "Nitin Singh",
@@ -52,12 +52,12 @@ const teamMembers = [
     color: "bg-cyan-600",
   },
   {
-    name: "Sanjay Agrawal",
-    role: "Public Relation Manager",
-    qualification: "",
-    institution: "",
-    image: "",
-    color: "bg-purple-600",
+    name: "Poonam Agrawal",
+    role: "Chief Operating Officer",
+    qualification: "B.Com",
+    institution: "University of Lucknow",
+    image: "/images/team-poonam.jpeg",
+    color: "bg-rose-600",
   },
 ];
 
