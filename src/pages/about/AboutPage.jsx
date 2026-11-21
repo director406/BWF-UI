@@ -1,4 +1,4 @@
-import { Target, Eye, Heart, Users, Award, Shield, Lightbulb, HandHeart } from "lucide-react";
+import { Target, Eye, Heart, Users, Award, Shield, Lightbulb, HandHeart, GraduationCap } from "lucide-react";
 import { SectionWrapper, Card } from "../../components";
 import { PageHeader } from "../../components/common";
 import { APP_INFO } from "../../utils/constants";
@@ -11,14 +11,54 @@ const coreValues = [
 ];
 
 const teamMembers = [
-  { name: "Prachi Nirmal", role: "Founder & Managing Director", image: "/images/prachin.png", color: "bg-emerald-600" },
-  { name: "Santosh Kumar", role: "Vice President & Executive Officer", image: "/images/team-santosh.png", color: "bg-amber-600" },
-  { name: "Gaurav Kumar", role: "Chief Executive Officer", image: "/images/team-gaurav.jpeg", color: "bg-green-700" },
-  { name: "Sanjay Agrawal", role: "Public Relation Manager", image: "", color: "bg-purple-600" },
-
-  { name: "Nitin Singh", role: "Field Officer", image: "/images/team-nitin.jpeg", color: "bg-cyan-600" },
-  { name: "Poonam Agrawal", role: "Chief Operating Officer", image: "/images/team-poonam.jpeg", color: "bg-rose-600" },
-
+  {
+    name: "Prachi Nirmal",
+    role: "Founder & Managing Director",
+    qualification: "M.A. Political Science",
+    institution: "University of Lucknow",
+    image: "/images/prachin.png",
+    color: "bg-emerald-600",
+  },
+  {
+    name: "Santosh Kumar",
+    role: "Vice President & Executive Officer",
+    qualification: "B.Sc. in Biology",
+    institution: "University of Lucknow",
+    image: "/images/team-santosh.png",
+    color: "bg-amber-600",
+  },
+  {
+    name: "Gaurav Kumar",
+    role: "Chief Executive Officer",
+    qualification: "B.Tech",
+    institution: "C. V. Raman Global University",
+    image: "/images/team-gaurav.jpeg",
+    color: "bg-green-700",
+  },
+  {
+    name: "Poonam Agrawal",
+    role: "Chief Operating Officer",
+    qualification: "B.Com",
+    institution: "University of Lucknow",
+    image: "/images/team-poonam.jpeg",
+    color: "bg-rose-600",
+  },
+  {
+    name: "Nitin Singh",
+    role: "Field Officer",
+    qualification: "B.Tech CSIT",
+    institution: "Mahatma Jyotiba Phule Rohilkhand University",
+    image: "/images/team-nitin.jpeg",
+    color: "bg-cyan-600",
+  },
+  {
+    name: "Sanjay Agrawal",
+    role: "Public Relation Manager",
+    qualification: "",
+    institution: "",
+    image: "",
+    color: "bg-purple-600",
+  },
 ];
 
 // const milestones = [
@@ -146,28 +186,57 @@ function AboutPage() {
             <h2 className="text-3xl font-bold text-primary">Our Leadership Team</h2>
             <p className="mt-3 text-slate-600 dark:text-slate-400">Dedicated professionals driving social change</p>
           </div>
-          <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {teamMembers.map((member) => (
-              <div key={member.name} className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm p-6 flex flex-col items-center text-center">
-                {member.image ? (
-                  <div className="h-28 w-28 rounded-full overflow-hidden ring-4 ring-green-100 dark:ring-green-900/40">
-                    <img
-                      src={member.image}
-                      alt={member.name}
-                      className="h-full w-full object-cover object-top"
-                    />
+              <div
+                key={member.name}
+                className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm hover:shadow-md transition-shadow p-6 flex flex-col items-center text-center justify-between"
+              >
+                <div className="flex flex-col items-center text-center w-full">
+                  {member.image ? (
+                    <div className="h-28 w-28 rounded-full overflow-hidden ring-4 ring-green-100 dark:ring-green-900/40 shadow-sm">
+                      <img
+                        src={member.image}
+                        alt={member.name}
+                        className="h-full w-full object-cover object-top"
+                      />
+                    </div>
+                  ) : (
+                    <div
+                      className={`h-28 w-28 rounded-full flex items-center justify-center ring-4 ring-green-100 dark:ring-green-900/40 shadow-sm ${member.color}`}
+                    >
+                      <span className="text-3xl font-bold text-white">
+                        {member.name
+                          .split(" ")
+                          .map((n) => n[0])
+                          .join("")
+                          .slice(0, 2)}
+                      </span>
+                    </div>
+                  )}
+                  <div className="mt-4">
+                    <h3 className="font-bold text-base sm:text-lg text-slate-900 dark:text-white">
+                      {member.name}
+                    </h3>
+                    <p className="mt-1 text-xs font-semibold text-primary dark:text-green-400 leading-snug">
+                      {member.role}
+                    </p>
                   </div>
-                ) : (
-                  <div className={`h-28 w-28 rounded-full flex items-center justify-center ring-4 ring-green-100 dark:ring-green-900/40 ${member.color}`}>
-                    <span className="text-3xl font-bold text-white">
-                      {member.name.split(" ").map(n => n[0]).join("").slice(0, 2)}
-                    </span>
+                </div>
+
+                {member.qualification && (
+                  <div className="mt-5 pt-3.5 border-t border-slate-100 dark:border-slate-700/80 w-full flex flex-col items-center">
+                    <div className="inline-flex items-center gap-1.5 rounded-full bg-green-50 dark:bg-green-950/50 border border-green-200/60 dark:border-green-800/60 px-3 py-1 text-xs font-bold text-green-800 dark:text-green-300">
+                      <GraduationCap size={14} className="text-green-600 dark:text-green-400 flex-shrink-0" />
+                      <span>{member.qualification}</span>
+                    </div>
+                    {member.institution && (
+                      <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400 font-medium">
+                        {member.institution}
+                      </p>
+                    )}
                   </div>
                 )}
-                <div className="mt-4">
-                  <h3 className="font-semibold text-primary">{member.name}</h3>
-                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 leading-snug">{member.role}</p>
-                </div>
               </div>
             ))}
           </div>
